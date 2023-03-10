@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import argparse
 
 def path_finder(target_city=None, start_city=None, straight_line_values=None, neighbors=None, debug=True):
     """
@@ -44,11 +45,11 @@ def path_finder(target_city=None, start_city=None, straight_line_values=None, ne
         if debug:
             print(f"Popped {attempt['city']}\n")
 
-        if city == target_city:
+        if attempt['city'] == target_city:
             print(f"Chegamos ao destino com custo {attempt['path_cost']} e caminho {attempt['path']} -> {attempt['city']}")
             break
         else:
-            for neighbor in neighbors[city]:
+            for neighbor in neighbors[attempt['city']]:
                 # Let's make sure we don't keep trying the same city
                 if neighbor in visited:
                     continue
@@ -62,52 +63,66 @@ def path_finder(target_city=None, start_city=None, straight_line_values=None, ne
 
         # Sort the options by total_cost
         options = sorted(options, key=lambda x:x['total_cost'])
-        max_tries -= 1
-        
+        max_tries -= 1        
 
-cities = [ "Arad", "Bucharest", "Craiova", "Dobreta", "Eforie", "Fagaras", "Giurgiu", "Hirsova", "Iasi", "Lugoj", 
-           "Mehadia", "Neamt", "Oradea", "Piattempti", "Rimnicu Vilcea", "Sibiu", "Timisoara", "Urziceni", "Vaslui", "Zerind", ]
 
-straight_line_to_bucharest = [ 366, 0, 160, 242, 161, 178, 77, 151, 226, 244, 241, 234, 380, 98, 193, 253, 329, 80, 199, 374, ]
+if __name__ == "__main__":
+    cities = [ "Arad", "Bucharest", "Craiova", "Dobreta", "Eforie", "Fagaras", "Giurgiu", "Hirsova", "Iasi", "Lugoj", 
+            "Mehadia", "Neamt", "Oradea", "Piattempti", "Rimnicu Vilcea", "Sibiu", "Timisoara", "Urziceni", "Vaslui", "Zerind", ]
 
-distance_matrix = [
-    [ 0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 140, 118, None, None, 75 ],
-    [ None, 0, None, None, None, 211, 90, None, None, None, None, None, None, 101, None, None, None, 85, None, None ],
-    [ None, None, 0, 120, None, None, None, None, None, None, None, None, None, 138, 146, None, None, None, None, None ],
-    [ None, None, 120, 0, None, None, None, None, None, None, 75, None, None, None, None, None, None, None, None, None ],
-    [ None, None, None, None, 0, None, None, 86, None, None, None, None, None, None, None, None, None, None, None, None ],
-    [ None, 211, None, None, None, 0, None, None, None, None, None, None, None, None, None, 99, None, None, None, None ],
-    [ None, 90, None, None, None, None, 0, None, None, None, None, None, None, None, None, None, None, None, None, None ],
-    [ None, None, None, None, 86, None, None, 0, None, None, None, None, None, None, None, None, None, 98, None, None ],
-    [ None, None, None, None, None, None, None, None, 0, None, None, 87, None, None, None, None, None, None, 92, None ],
-    [ None, None, None, None, None, None, None, None, None, 0, 70, None, None, None, None, None, 111, None, None, None ],
-    [ None, None, None, 75, None, None, None, None, None, 70, 0, None, None, None, None, None, None, None, None, None ],
-    [ None, None, None, None, None, None, None, None, 87, None, None, 0, None, None, None, None, None, None, None, None ],
-    [ None, None, None, None, None, None, None, None, None, None, None, None, 0, None, None, 151, None, None, None, 71 ],
-    [ None, 101, 138, None, None, None, None, None, None, None, None, None, None, 0, 97, None, None, None, None, None ],
-    [ None, None, 146, None, None, None, None, None, None, None, None, None, None, 97, 0, 80, None, None, None, None ],
-    [ 140, None, None, None, None, 99, None, None, None, None, None, None, 151, None, 80, 0, None, None, None, None ],
-    [ 118, None, None, None, None, None, None, None, None, 111, None, None, None, None, None, None, 0, None, None, None ],
-    [ None, 85, None, None, None, None, None, 98, None, None, None, None, None, None, None, None, None, 0, 142, None ],
-    [ None, None, None, None, None, None, None, None, 92, None, None, None, None, None, None, None, None, 142, 0, None ],
-    [ 75, None, None, None, None, None, None, None, None, None, None, None, 71, None, None, None, None, None, None, 0 ],
-]
+    straight_line_to_bucharest = [ 366, 0, 160, 242, 161, 178, 77, 151, 226, 244, 241, 234, 380, 98, 193, 253, 329, 80, 199, 374, ]
 
-target_city = 'Bucharest'
-start_city = 'Oradea'
+    distance_matrix = [
+        [ 0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 140, 118, None, None, 75 ],
+        [ None, 0, None, None, None, 211, 90, None, None, None, None, None, None, 101, None, None, None, 85, None, None ],
+        [ None, None, 0, 120, None, None, None, None, None, None, None, None, None, 138, 146, None, None, None, None, None ],
+        [ None, None, 120, 0, None, None, None, None, None, None, 75, None, None, None, None, None, None, None, None, None ],
+        [ None, None, None, None, 0, None, None, 86, None, None, None, None, None, None, None, None, None, None, None, None ],
+        [ None, 211, None, None, None, 0, None, None, None, None, None, None, None, None, None, 99, None, None, None, None ],
+        [ None, 90, None, None, None, None, 0, None, None, None, None, None, None, None, None, None, None, None, None, None ],
+        [ None, None, None, None, 86, None, None, 0, None, None, None, None, None, None, None, None, None, 98, None, None ],
+        [ None, None, None, None, None, None, None, None, 0, None, None, 87, None, None, None, None, None, None, 92, None ],
+        [ None, None, None, None, None, None, None, None, None, 0, 70, None, None, None, None, None, 111, None, None, None ],
+        [ None, None, None, 75, None, None, None, None, None, 70, 0, None, None, None, None, None, None, None, None, None ],
+        [ None, None, None, None, None, None, None, None, 87, None, None, 0, None, None, None, None, None, None, None, None ],
+        [ None, None, None, None, None, None, None, None, None, None, None, None, 0, None, None, 151, None, None, None, 71 ],
+        [ None, 101, 138, None, None, None, None, None, None, None, None, None, None, 0, 97, None, None, None, None, None ],
+        [ None, None, 146, None, None, None, None, None, None, None, None, None, None, 97, 0, 80, None, None, None, None ],
+        [ 140, None, None, None, None, 99, None, None, None, None, None, None, 151, None, 80, 0, None, None, None, None ],
+        [ 118, None, None, None, None, None, None, None, None, 111, None, None, None, None, None, None, 0, None, None, None ],
+        [ None, 85, None, None, None, None, None, 98, None, None, None, None, None, None, None, None, None, 0, 142, None ],
+        [ None, None, None, None, None, None, None, None, 92, None, None, None, None, None, None, None, None, 142, 0, None ],
+        [ 75, None, None, None, None, None, None, None, None, None, None, None, 71, None, None, None, None, None, None, 0 ],
+    ]
 
-neighbors = {}
-sltd = {}
+    parser = argparse.ArgumentParser()
 
-# Convert our distance_matrix and our straight_line_array to a dict format
-for s, s_city in enumerate(cities):
-    neighbors[s_city] = {}
-    for d, d_city in enumerate(cities):
-        if s != d and distance_matrix[s][d] is not None:
-            neighbors[s_city][d_city] = distance_matrix[s][d]
-    sltd[s_city] = straight_line_to_bucharest[s]
+    parser.add_argument(
+        "--s_city",
+        help="Source City",
+        default="Sibiu"
+    )
+    args = parser.parse_args()
 
-print(json.dumps(neighbors, indent=2))
-print(json.dumps(sltd, indent=2))
+    if args.s_city not in cities:
+        print(f"I don't know any city named {args.s_city}")
+        exit(1)
 
-path_finder(start_city=start_city, target_city=target_city, straight_line_values=stld, neighbors=neighbors)
+    start_city = args.s_city
+    target_city = 'Bucharest'
+
+    neighbors = {}
+    sltd = {}
+
+    # Convert our distance_matrix and our straight_line_array to a dict format
+    for s, s_city in enumerate(cities):
+        neighbors[s_city] = {}
+        for d, d_city in enumerate(cities):
+            if s != d and distance_matrix[s][d] is not None:
+                neighbors[s_city][d_city] = distance_matrix[s][d]
+        sltd[s_city] = straight_line_to_bucharest[s]
+
+    print(json.dumps(neighbors, indent=2))
+    print(json.dumps(sltd, indent=2))
+
+    path_finder(start_city=start_city, target_city=target_city, straight_line_values=sltd, neighbors=neighbors)
