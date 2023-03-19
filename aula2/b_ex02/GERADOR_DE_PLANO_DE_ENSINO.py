@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-from planning.paip.gps import gps
 import sys
 sys.path.append('..')
+
+from planning.paip.gps import gps
 
 ### Inclua abaixo a definição para o problema
 ### descrito no arquivo "Exercicio_gerador_de_plano_de_ensino.docx"

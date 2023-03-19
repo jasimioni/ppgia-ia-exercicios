@@ -99,10 +99,25 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--s_city",
-        help="Source City",
-        default="Sibiu"
+        help="Source City"
     )
+
+    parser.add_argument(
+        "--list_cities",
+        help="List Cities",
+        action='store_true'
+    )
+
     args = parser.parse_args()
+
+    if args.list_cities:
+        for city in cities:
+            print(city)
+        exit(0)
+
+    if args.s_city is None:
+        parser.print_help()
+        exit(1)
 
     if args.s_city not in cities:
         print(f"I don't know any city named {args.s_city}")
