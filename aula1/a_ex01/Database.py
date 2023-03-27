@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 
 from ExpertSystem.api.esMenu import APP
-from RuleBaseXXXXX import RuleBaseXXXXX
+from RuleBaseDatabase import RuleBaseDatabase
 
 class Main:
     def __init__(self):
@@ -14,9 +14,9 @@ class Main:
             # o primeiro é nome da base de regras e
             # o segundo é lista de várias presentes na base de regras.
             # Essas variáveis fazem parte dos possíveis objetivos
-            brCinema = RuleBaseXXXXX("Como XXXXXX",
-                                      "[var1 var3] :")
-            self.app.add_rule_base(brCinema)
+            brDatabase = RuleBaseDatabase("Escolhendo seu banco de dados",
+                                      "[licenciamento banco_de_dados] :")
+            self.app.add_rule_base(brDatabase)
             self.app.menu()
         except Exception as e:
             print("Exception: RuleApp ", e.with_traceback())

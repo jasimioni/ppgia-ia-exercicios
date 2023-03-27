@@ -41,18 +41,22 @@ class Tile():
 # Piece():
 # Extendes the base class (Tile) and add the methods to move, check if satisfied, set status and objective
 class Piece(Tile):
-    def __init__(self, id, size):
+    def __init__(self, id, size, fmt_names=False, restrictions=set()):
         super().__init__(id)
         self.size = size
         self.below_me = None
         self.state = ['BS']
-        self.restrictions = set([])
+        self.temp_restrictions = set([])
+        self.perm_restrictions = restrictions
         self.aggressed = False
+        self.fmt_names = fmt_names
 
     def set_objective(self, objective):
         self.objective = objective
 
     def fmt(self, width):
+        if self.fmt_names:
+            return self.id.center(width)
         return ('#' * self.size).center(width)
 
     def is_satisfied(self):
@@ -61,6 +65,10 @@ class Piece(Tile):
         
     def details(self):
         return f'{self.id}, Objective: {self.objective}, Restrictions: {self.restrictions}, State: {self.state}, Aggressed: {self.aggressed}'
+
+    @property
+    def restrictions(self):
+        return self.temp_restrictions.union(self.perm_restrictions)
 
     @property
     def BS(self):
@@ -95,7 +103,7 @@ class Piece(Tile):
             self.state.append(S)
 
     def clear_restrictions(self):
-        self.restrictions = set([])
+        self.temp_restrictions = set([])
         self.aggressed = False
 
     def aggress_blocker(self):
@@ -132,9 +140,9 @@ def teacher_position():
     t1, t2, t3 = tiles
 
     pieces = [
-        Piece('A', 1),
-        Piece('B', 3),
-        Piece('C', 5),
+        Piece('A', 1, fmt_names=True),
+        Piece('B', 3, fmt_names=True),
+        Piece('C', 5, fmt_names=True),
     ]
 
     a, b, c = pieces
@@ -151,7 +159,7 @@ def teacher_position():
 
 # random_position:
 # Takes all the tiles and pieces and generates a random positioning of the pieces
-def random_position(tile_count, piece_count):
+def random_position(tile_count, piece_count, disks):
     tiles = []
     for x in range(tile_count):
         tiles.append(Tile(f'T{x+1:02}'))
@@ -178,6 +186,31 @@ def random_position(tile_count, piece_count):
             except Exception as e:
                 logger.debug(f'\t{e}')
     
+    return tiles, pieces
+
+# default_position:
+# Setup a default position on tile1
+def default_position(tile_count, piece_count, disks):
+    tiles = []
+    for x in range(tile_count):
+        tiles.append(Tile(f'T{x+1:02}'))
+
+    pieces = []
+    for x in range(piece_count):
+        pieces.append(Piece(f'P{x+1:02}', x * 2 + 1))
+    
+    for x in range(piece_count - 1):
+        pieces[x].set_objective(pieces[x+1])
+        pieces[x].move(pieces[x+1])
+
+    pieces[-1].set_objective(tiles[-1])
+    pieces[-1].move(tiles[0])
+
+    if disks:
+        for x in range(1, piece_count):
+            for y in range(piece_count-1):
+                pieces[x].perm_restrictions.add(pieces[y])
+
     return tiles, pieces
 
 # print_status:
@@ -216,6 +249,8 @@ def solver(tiles, pieces, delay=False):
     print_status(tiles, pieces)
     logger.info('')
 
+    moves = []
+
     limit = 1
     while sum([ piece.S for piece in pieces ]) < len(pieces):
         if delay:
@@ -229,28 +264,34 @@ def solver(tiles, pieces, delay=False):
             if piece.aggressed and not piece.BF:
                 piece.set_BF()
             elif piece.BS:
-                if piece.is_free():
-                    # Free to move,trying to move to objective
-                    if piece.objective.is_free():
-                        piece.move(piece.objective)
-                        logger.debug(f"Moving {piece} over {piece.objective}")
-                        piece.set_S()
+                if piece.objective == piece.below_me:
+                    piece.set_S()
                 else:
-                    piece.aggress_blocker()
+                    if piece.is_free():
+                        # Free to move,trying to move to objective
+                        if piece.objective.is_free():
+                            piece.move(piece.objective)
+                            moves.append([ piece, piece.objective ])
+                            logger.debug(f"=====> Moving {piece} over {piece.objective}")
+                            piece.set_S()
+                    else:
+                        piece.aggress_blocker()
             elif piece.F:
                 piece.set_BS()
             elif piece.BF:
                 if piece.is_free():
                     if piece.objective.is_free() and piece.objective not in piece.restrictions:
                         piece.move(piece.objective)
-                        logger.debug(f"Moving {piece} over {piece.objective}")
-                        piece.set_S()
+                        moves.append([ piece, piece.objective ])
+                        logger.debug(f"=====> Moving {piece} over {piece.objective}")
+                        piece.set_F()
                         piece.clear_restrictions()
                     else:
                         for option in all:
                             if option != piece and option.is_free() and option not in piece.restrictions:
                                 piece.move(option)
-                                logger.debug(f"Moving {piece} over {option}")
+                                moves.append([ piece, option ])
+                                logger.debug(f"=====> Moving {piece} over {option}")
                                 piece.set_F()
                                 piece.clear_restrictions()
                                 break
@@ -259,6 +300,8 @@ def solver(tiles, pieces, delay=False):
         logger.info('')
         print_status(tiles, pieces)
         logger.info('')
+
+    return moves
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -293,6 +336,18 @@ if __name__ == '__main__':
         action='store_true'
     )
 
+    parser.add_argument(
+        "--random",
+        help="Randomize pieces positions",
+        action='store_true'
+    )
+
+    parser.add_argument(
+        "--disks",
+        help="Add a perm restriction - bigger disks can't go over smaller ones",
+        action='store_true'
+    )
+
     args = parser.parse_args()
 
     logger.setLevel(logging.INFO)
@@ -302,16 +357,19 @@ if __name__ == '__main__':
     if args.class_example:
         logger.info(f'Loading default class example')
         tiles, pieces = teacher_position()
-    else:
+    elif args.random:
         logger.info(f'Creating random setup with {args.tiles} tiles and {args.pieces} pieces')
-        tiles, pieces = random_position(int(args.tiles), int(args.pieces))
+        tiles, pieces = random_position(int(args.tiles), int(args.pieces), args.disks)
+    else:
+        logger.info(f'Creating default setup with {args.tiles} tiles and {args.pieces} pieces')
+        tiles, pieces = default_position(int(args.tiles), int(args.pieces), args.disks)
 
     for piece in pieces:
         logger.info(f'{piece} has objective {piece.objective}')
 
     logger.info("\n\n")
 
-    solver(tiles, pieces, delay=args.delay)
+    moves = solver(tiles, pieces, delay=args.delay)
 
     logger.info("\n#############\nFinal result:\n#############\n")
 
@@ -320,4 +378,7 @@ if __name__ == '__main__':
 
     logger.info('')
     print_status(tiles, pieces)
+
+    print("\nList of movements:\n------------------\n")
+    logger.info(' | '.join(f'Moved {move[0]} over {move[1]}' for move in moves))
     
