@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style type="text/css">
+      table,
+      th,
+      td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 0;
+        text-align: center;
+        border: "1px solid black";
+        width: 50px;
+        height: 50px;
+      }
+
+      div {
+        padding-top: 20px;
+      }
+    </style>
+
+  </head>
+  <body>
+    <div id="resultado"></div>
+    <div id="table"></div>
+
+    <div id="buttons">
+      <input type="button" value="Solve DFS" id="btnSolveDFS" />
+      <input type="button" value="Solve BFS" id="btnSolveBFS" />
+      <input type="button" value="Solve AStar" id="btnSolveAStar" />
+      <input type="button" value="Reset" id="btnReset" />
+    </div>
+  </body>
+
+    <script>
+      var rows = 11;
+      var cols = 15;
+
+      function getNeighboors(nodes, node) {
+        var nb = [];
+        if (typeof nodes[node.row - 1] !== "undefined") {
+          if (typeof nodes[node.row - 1][node.col - 1] !== "undefined") {
+            nb.push(nodes[node.row - 1][node.col - 1]);
+          }
+          if (typeof nodes[node.row - 1][node.col] !== "undefined") {
+            nb.push(nodes[node.row - 1][node.col]);
+          }
+          if (typeof nodes[node.row - 1][node.col + 1] !== "undefined") {
+            nb.push(nodes[node.row - 1][node.col + 1]);
+          }
+        }
+        if (typeof nodes[node.row][node.col - 1] !== "undefined") {
+          nb.push(nodes[node.row][node.col - 1]);
+        }
+        if (typeof nodes[node.row][node.col + 1] !== "undefined") {
+          nb.push(nodes[node.row][node.col + 1]);
+        }
+        if (typeof nodes[node.row + 1] !== "undefined") {
+          if (typeof nodes[node.row + 1][node.col - 1] !== "undefined") {
+            nb.push(nodes[node.row + 1][node.col - 1]);
+          }
+          if (typeof nodes[node.row + 1][node.col] !== "undefined") {
+            nb.push(nodes[node.row + 1][node.col]);
+          }
+          if (typeof nodes[node.row + 1][node.col + 1] !== "undefined") {
+            nb.push(nodes[node.row + 1][node.col + 1]);
+          }
+        }
+        return nb;
+      }
+
+      function printPath(node) {
+        var path = [];
+        var pathStr = [];
+        while (node.cellType != "start") {
+          path.unshift(node);
+          pathStr.unshift(node.cellObject.innerHTML);
+          node = node.prev;
+          if (path.length > 200) {
+            break;
+          }
+        }
+        path.unshift(node);
+        pathStr.unshift(node.cellObject.innerHTML);
+        const div = document.getElementById("resultado");
+        div.innerHTML = "Caminho encontrado: " + pathStr.join(" => ");
+        console.log(path);
+      }
+
+      function processNodeAStar(toVisit, count, objective, nodes) {
+        if (toVisit.length > 0) {
+          toVisit.sort((a, b) => {
+            if (a.valueF < b.valueF) {
+              return -1;
+            }
+            if (a.valueF > b.valueF) {
+              return 1;
+            }
+            return 0;
+          });
+          var current = toVisit.shift();
+          if (current === objective) {
+            current.cellObject.innerHTML = "FIM";
+            printPath(current);
+          } else {
+            current.cellObject.innerHTML = count++;
+            current.cellObject.style.backgroundColor =
+              "rgba(" + (50 + count) + ",40,40,1)";
+            var nb = getNeighboors(nodes, current);
+            nb.forEach((node) => {
+              if (node.cellType == "path" && node.status != "stacked") {
+                toVisit.push(node);
+                node.status = "stacked";
+                node.prev = current;
+                node.valueG = current.valueG + 1;
+                node.valueH =
+                  Math.abs(objective.row - node.row) +
+                  Math.abs(objective.col - node.col);
+                node.valueF = node.valueH + node.valueG;
+              }
+            });
+
+            if (count < 1000) {
+              setTimeout(() => {
+                processNodeAStar(toVisit, count, objective, nodes);
+              }, 100);
+            }
+          }
+        }
+      }
+
+      function solveAStar(nodes, start, objective) {
+        var toVisit = [start];
+        var count = 1;
+
+        setTimeout(() => {
+          processNodeAStar(toVisit, count, objective, nodes);
+        }, 100);
+      }
+
+      function processNodeDFS(toVisit, count, objective, nodes) {
+        if (toVisit.length > 0) {
+          var current = toVisit.shift();
+          if (current === objective) {
+            current.cellObject.innerHTML = "FIM";
+            printPath(current);
+          } else {
+            current.cellObject.innerHTML = count++;
+            current.cellObject.style.backgroundColor =
+              "rgba(" + (50 + count) + ",40,40,1)";
+            var nb = getNeighboors(nodes, current);
+            nb.forEach((node) => {
+              if (node.cellType == "path" && node.status != "stacked") {
+                toVisit.unshift(node);
+                node.status = "stacked";
+                node.prev = current;
+              }
+            });
+
+            if (count < 1000) {
+              setTimeout(() => {
+                processNodeDFS(toVisit, count, objective, nodes);
+              }, 100);
+            }
+          }
+        }
+      }
+
+      function solveDFS(nodes, start, objective) {
+        var toVisit = [start];
+        var count = 1;
+
+        setTimeout(() => {
+          processNodeDFS(toVisit, count, objective, nodes);
+        }, 100);
+      }
+
+      function processNodeBFS(toVisit, count, objective, nodes) {
+        if (toVisit.length > 0) {
+          var current = toVisit.shift();
+          if (current === objective) {
+            current.cellObject.innerHTML = "FIM";
+            printPath(current);
+          } else {
+            current.cellObject.innerHTML = count++;
+            current.cellObject.style.backgroundColor =
+              "rgba(" + (50 + count) + ",40,40,1)";
+            var nb = getNeighboors(nodes, current);
+            nb.forEach((node) => {
+              if (node.cellType == "path" && node.status != "stacked") {
+                toVisit.push(node);
+                node.status = "stacked";
+                node.prev = current;
+              }
+            });
+
+            if (count < 1000) {
+              setTimeout(() => {
+                processNodeBFS(toVisit, count, objective, nodes);
+              }, 100);
+            }
+          }
+        }
+      }
+
+      function solveBFS(nodes, start, objective) {
+        var toVisit = [start];
+        var count = 1;
+
+        setTimeout(() => {
+          processNodeBFS(toVisit, count, objective, nodes);
+        }, 100);
+      }
+
+      function tableCreate(rows, cols) {
+        var nodes = [],
+          div = document.getElementById("table"),
+          tbl = document.createElement("table");
+
+        div.innerHTML = "";
+
+        for (var i = 0; i < rows; i++) {
+          nodes[i] = [];
+          var tr = tbl.insertRow();
+          for (var j = 0; j < cols; j++) {
+            var td = tr.insertCell();
+            td.style.color = 'white';
+            nodes[i][j] = {
+              cellObject: td,
+              cellType: "path",
+              row: i,
+              col: j,
+            };
+          }
+        }
+        div.appendChild(tbl);
+        return nodes;
+      }
+
+      function setStartObjective(start, objective, obstacles) {
+        start.cellObject.innerHTML = "S";
+        start.cellObject.style.backgroundColor = "blue";
+        start.cellObject.style.color = "white";
+        start.cellType = "start";
+        start.valueG = 0;
+
+        objective.cellObject.innerHTML = "O";
+        objective.cellObject.style.backgroundColor = "darkGreen";
+        objective.cellObject.style.color = "white";
+        // objective.cellType = 'objective';
+
+        obstacles.forEach((node) => {
+          node.cellObject.innerHTML = "#";
+          node.cellObject.style.backgroundColor = "black";
+          node.cellObject.style.color = "white";
+          node.cellType = "obstacle";
+        });
+      }
+
+      function initBoard() {
+        var nodes = tableCreate(rows, cols);
+        var start = nodes[5][2];
+        var objective = nodes[3][12];
+        var obstacles = [nodes[7][4], nodes[2][12], nodes[3][7]];
+        setStartObjective(start, objective, obstacles);
+        document.getElementById("resultado").innerHTML = "";
+        document.getElementById("btnReset").onclick = initBoard;
+        document.getElementById("btnSolveDFS").onclick = function () {
+          solveDFS(nodes, start, objective);
+        };
+        document.getElementById("btnSolveBFS").onclick = function () {
+          solveBFS(nodes, start, objective);
+        };
+        document.getElementById("btnSolveAStar").onclick = function () {
+          solveAStar(nodes, start, objective);
+        };
+      }
+
+      initBoard();
+    </script>
+</html>
