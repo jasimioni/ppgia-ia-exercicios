@@ -242,7 +242,7 @@ def print_status(tiles, pieces):
     #for piece in pieces:
     #    print(piece.details())
 
-def solver(tiles, pieces, delay=False):
+def solver(tiles, pieces, delay=False, shuffle=False, reverse=True):
     all = [ *tiles, *pieces ]
 
     logger.info("Starting solver - initial status:\n")
@@ -255,11 +255,15 @@ def solver(tiles, pieces, delay=False):
     while sum([ piece.S for piece in pieces ]) < len(pieces):
         if delay:
             time.sleep(1)
-        if limit == 500:
+        if limit > 500:
             break
         logger.info(f"Execution {limit}")
         limit += 1
-        for piece in pieces:
+        piece_list = random.sample(pieces, len(pieces)) if shuffle else pieces
+        if reverse:
+            piece_list = list(reversed(piece_list))
+        print(f"Order: {' '.join([ piece.__repr__() for piece in piece_list ])}")
+        for piece in piece_list:
             logger.debug(piece.details())
             if piece.aggressed and not piece.BF:
                 piece.set_BF()
@@ -274,6 +278,15 @@ def solver(tiles, pieces, delay=False):
                             moves.append([ piece, piece.objective ])
                             logger.debug(f"=====> Moving {piece} over {piece.objective}")
                             piece.set_S()
+                        else:
+                            for option in all:
+                                if option != piece and option.is_free() and option not in piece.restrictions:
+                                    piece.move(option)
+                                    moves.append([ piece, option ])
+                                    logger.debug(f"=====> Moving {piece} over {option}")
+                                    piece.set_BS()
+                                    piece.clear_restrictions()
+                                    break
                     else:
                         piece.aggress_blocker()
             elif piece.F:
@@ -301,7 +314,7 @@ def solver(tiles, pieces, delay=False):
         print_status(tiles, pieces)
         logger.info('')
 
-    return moves
+    return moves, limit - 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -348,6 +361,18 @@ if __name__ == '__main__':
         action='store_true'
     )
 
+    parser.add_argument(
+        "--shuffle",
+        help="Process pieces in a random order instead of sequentially",
+        action='store_true'
+    )
+
+    parser.add_argument(
+        "--reverse",
+        help="Process pieces in a reverse order instead of sequentially",
+        action='store_true'
+    )
+
     args = parser.parse_args()
 
     logger.setLevel(logging.INFO)
@@ -369,7 +394,7 @@ if __name__ == '__main__':
 
     logger.info("\n\n")
 
-    moves = solver(tiles, pieces, delay=args.delay)
+    moves, iterations = solver(tiles, pieces, delay=args.delay, shuffle=args.shuffle, reverse=args.reverse)
 
     logger.info("\n#############\nFinal result:\n#############\n")
 
@@ -379,6 +404,7 @@ if __name__ == '__main__':
     logger.info('')
     print_status(tiles, pieces)
 
-    print("\nList of movements:\n------------------\n")
-    logger.info(' | '.join(f'Moved {move[0]} over {move[1]}' for move in moves))
+    # print("\nList of movements:\n------------------\n")
+    # logger.info(' | '.join(f'Moved {move[0]} over {move[1]}' for move in moves))
+    print(f"Number of movements: {len(moves)} in {iterations} iterations")
     
